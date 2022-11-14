@@ -1,5 +1,6 @@
 import itertools
 from random import randint
+
 import pygame
 
 
@@ -35,10 +36,13 @@ def create_grid(rows, cols, bombs=None):
     grid = [[0 for _ in range(cols)] for _ in range(rows)]
     count = 0
     bomb_pos = []
+
+    taboos = [(0, 0), (0, COLS-1), (ROWS-1, 0), (ROWS-1, COLS-1)]
+
     while count < bombs:
         y = randint(0, rows - 1)
         x = randint(0, cols - 1)
-        if grid[y][x] == -1:
+        if grid[y][x] == -1 or (y, x) in taboos:
             continue
         grid[y][x] = -1
         bomb_pos.append((x, y))
@@ -71,6 +75,12 @@ CELL_H = HEIGHT / ROWS
 COLORS = {"red": (255, 0, 0), "white": (255, 255, 255), "black": (0, 0, 0)}
 
 
+def game_over():
+    WIN.fill(COLORS["black"])
+    text = font1.render("You lost! You loser!", True, COLORS["white"])
+    WIN.blit(text, text.get_rect())
+
+
 def draw(grid, cover_grid):
     WIN.fill(COLORS["black"])
 
@@ -96,16 +106,20 @@ def draw(grid, cover_grid):
 
 def switch_cover(switch, x, y, grid, cover_grid):
     cover_grid[y][x] = switch
+    if switch == 1 and grid[y][x] == -1:
+        return True
     if switch == 1 and grid[y][x] == 0:
         neighbors = get_neighbors(x, y, len(grid), len(grid[0]))
         for x, y in neighbors:
             if cover_grid[y][x] == 0:
                 switch_cover(switch, x, y, grid, cover_grid)
+    return False
 
 
 def main():
     grid = create_grid(ROWS, COLS)
     cover_grid = create_cover_grid(grid)
+    lost = False
 
     run = True
     while run:
@@ -118,13 +132,17 @@ def main():
                 row, col = int(my/CELL_H), int(mx/CELL_W)
                 left, _, right = pygame.mouse.get_pressed()
                 if left:
-                    switch_cover(1, col, row, grid, cover_grid)
+                    if cover_grid[row][col] != -1:
+                        lost = switch_cover(1, col, row, grid, cover_grid)
                 elif right:
                     if cover_grid[row][col] == -1:
-                        switch_cover(0, col, row, grid, cover_grid)
+                        lost = switch_cover(0, col, row, grid, cover_grid)
                     else:
-                        switch_cover(-1, col, row, grid, cover_grid)
-        draw(grid, cover_grid)
+                        lost = switch_cover(-1, col, row, grid, cover_grid)
+        if not lost:
+            draw(grid, cover_grid)
+        else:
+            game_over()
         pygame.display.update()
         FPS_CLOCK.tick(30)
 
