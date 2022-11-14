@@ -1,3 +1,4 @@
+import itertools
 from random import randint
 import pygame
 
@@ -60,6 +61,7 @@ def create_cover_grid(grid):
 pygame.init()
 WIDTH, HEIGHT = 400, 400
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
+font1 = pygame.font.SysFont('freesanbold.ttf', 50)
 
 ROWS, COLS = 10, 10
 CELL_W = WIDTH / COLS
@@ -68,18 +70,31 @@ CELL_H = HEIGHT / ROWS
 COLORS = {"red": (255, 0, 0), "white": (255, 255, 255), "black": (0, 0, 0)}
 
 
-def draw():
+def draw(grid, cover_grid):
     WIN.fill(COLORS["black"])
+
+    for y, x in itertools.product(range(ROWS), range(COLS)):
+        text1 = font1.render(
+            str(grid[y][x]) if grid[y][x] != -1 else "", True, COLORS["black"])
+        text1_rect = text1.get_rect()
+        WIN.blit(text1, text1_rect)
+
+    for y, x in itertools.product(range(ROWS), range(COLS)):
+        value = cover_grid[y][x]
+        if value != 1:
+            if value == 0:
+                color = COLORS["white"]
+            elif value == -1:
+                color = COLORS["red"]
+            pygame.draw.rect(
+                WIN, COLORS["black"], (x * CELL_W, y * CELL_H, CELL_W, CELL_H))
+            pygame.draw.rect(
+                WIN, color, (x * CELL_W, y * CELL_H, CELL_W - 2, CELL_H - 2))
 
 
 def main():
     grid = create_grid(ROWS, COLS)
     cover_grid = create_cover_grid(grid)
-
-    for row in grid:
-        print(row)
-    for row in cover_grid:
-        print(row)
 
     run = True
     while run:
@@ -87,7 +102,7 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
                 break
-        draw()
+        draw(grid, cover_grid)
         pygame.display.update()
 
 
