@@ -62,6 +62,7 @@ pygame.init()
 WIDTH, HEIGHT = 400, 400
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 font1 = pygame.font.SysFont('freesanbold.ttf', 50)
+FPS_CLOCK = pygame.time.Clock()
 
 ROWS, COLS = 10, 10
 CELL_W = WIDTH / COLS
@@ -74,10 +75,11 @@ def draw(grid, cover_grid):
     WIN.fill(COLORS["black"])
 
     for y, x in itertools.product(range(ROWS), range(COLS)):
-        text1 = font1.render(
-            str(grid[y][x]) if grid[y][x] != -1 else "", True, COLORS["black"])
-        text1_rect = text1.get_rect()
-        WIN.blit(text1, text1_rect)
+        if grid[y][x] != 0:
+            text1 = font1.render(
+                str(grid[y][x]) if grid[y][x] != -1 else "X", True, COLORS["white"])
+            WIN.blit(text1, (x * CELL_W + (CELL_W/2 - text1.get_width()/2), y * CELL_H + (
+                CELL_H/2 - text1.get_height()/2)))
 
     for y, x in itertools.product(range(ROWS), range(COLS)):
         value = cover_grid[y][x]
@@ -92,6 +94,15 @@ def draw(grid, cover_grid):
                 WIN, color, (x * CELL_W, y * CELL_H, CELL_W - 2, CELL_H - 2))
 
 
+def switch_cover(switch, x, y, grid, cover_grid):
+    cover_grid[y][x] = switch
+    if switch == 1 and grid[y][x] == 0:
+        neighbors = get_neighbors(x, y, len(grid), len(grid[0]))
+        for x, y in neighbors:
+            if cover_grid[y][x] == 0:
+                switch_cover(switch, x, y, grid, cover_grid)
+
+
 def main():
     grid = create_grid(ROWS, COLS)
     cover_grid = create_cover_grid(grid)
@@ -102,8 +113,20 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
                 break
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mx, my = pygame.mouse.get_pos()
+                row, col = int(my/CELL_H), int(mx/CELL_W)
+                left, _, right = pygame.mouse.get_pressed()
+                if left:
+                    switch_cover(1, col, row, grid, cover_grid)
+                elif right:
+                    if cover_grid[row][col] == -1:
+                        switch_cover(0, col, row, grid, cover_grid)
+                    else:
+                        switch_cover(-1, col, row, grid, cover_grid)
         draw(grid, cover_grid)
         pygame.display.update()
+        FPS_CLOCK.tick(30)
 
 
 if __name__ == "__main__":
